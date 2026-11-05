@@ -117,11 +117,16 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 <span class="sb" id="lmsg">Sign in to sync your events across devices.</span>
 <button class="bt pr" id="bLogin" style="padding:14px 22px;font-size:15px" hidden>Sign in with Google</button>
 </div>
+<script>
+function __show(t){var m=document.getElementById('lmsg');if(m)m.textContent=t}
+window.addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='SCRIPT'){__show('Error: could not load '+(t.src||'script').split('/').slice(-2).join('/'))}else{__show('Error: '+(e.message||'unknown')+(e.lineno?' (line '+e.lineno+')':''))}},true);
+window.addEventListener('unhandledrejection',function(e){var r=e.reason;__show('Error: '+((r&&(r.code||r.message))||r))});
+</script>
 <script type="module">
-import { firebaseConfig } from './firebase-config.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import { initializeFirestore, persistentLocalCache, doc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+const firebaseConfig=await fetch('./firebase-config.json',{cache:'no-store'}).then(r=>r.text()).then(t=>JSON.parse(t.replace(/^\uFEFF/,'').replace(/[\u201C\u201D\u201E\u201F\u300C\u300D\uFF02]/g,'"').replace(/,\s*}/g,'}'))).catch(()=>null);
 const $=s=>document.querySelector(s),pad=n=>String(n).padStart(2,'0');
 const key=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const parse=s=>{const a=s.split('-').map(Number);return new Date(a[0],a[1]-1,a[2])};
@@ -249,13 +254,14 @@ setMode(LS('mode')===1?1:0);
 /* ---- Google sign-in + Firestore (per-user private data) ---- */
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
 const login=$('#login'),bLogin=$('#bLogin'),lmsg=$('#lmsg');
-if(!firebaseConfig||!firebaseConfig.apiKey||String(firebaseConfig.apiKey).startsWith('PASTE')){lmsg.textContent='Firebase is not set up yet. Open public/firebase-config.js and paste your settings.'}
+if(!firebaseConfig||!firebaseConfig.apiKey||String(firebaseConfig.apiKey).startsWith('PASTE')){lmsg.textContent='Firebase is not set up yet. Open public/firebase-config.json and paste your settings.'}
 else{
 const app=initializeApp(firebaseConfig),auth=getAuth(app),fs=initializeFirestore(app,{localCache:persistentLocalCache()}),prov=new GoogleAuthProvider();
 let unsubs=[];
 const mkRoot=uid=>({doc:k=>{const r=doc(fs,'users/'+uid+'/data/'+k);return{set:v=>setDoc(r,v),onSnapshot:(cb,err)=>{const u=onSnapshot(r,sn=>cb({exists:sn.exists(),data:()=>sn.data(),metadata:sn.metadata}),err);unsubs.push(u);return u}}}});
 bLogin.onclick=async()=>{lmsg.textContent='Opening Google sign-in…';try{await signInWithPopup(auth,prov)}catch(e){if(e&&(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment'||e.code==='auth/popup-closed-by-user'&&false)){signInWithRedirect(auth,prov)}else{lmsg.textContent='Sign-in failed ['+(e&&e.code||'error')+']. Tap the button to try again.'}}};
 doSignOut=()=>signOut(auth);
+setTimeout(()=>{if(login.style.display!=='none')bLogin.hidden=false},3000);
 getRedirectResult(auth).catch(e=>{lmsg.textContent='Sign-in failed ['+(e&&e.code||'error')+']'});
 onAuthStateChanged(auth,user=>{
 unsubs.forEach(f=>{try{f()}catch(e){}});unsubs=[];if(wsub){wsub();wsub=null}wsk='';
