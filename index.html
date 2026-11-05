@@ -259,7 +259,10 @@ else{
 const app=initializeApp(firebaseConfig),auth=getAuth(app),fs=initializeFirestore(app,{localCache:persistentLocalCache()}),prov=new GoogleAuthProvider();
 let unsubs=[];
 const mkRoot=uid=>({doc:k=>{const r=doc(fs,'users/'+uid+'/data/'+k);return{set:v=>setDoc(r,v),onSnapshot:(cb,err)=>{const u=onSnapshot(r,sn=>cb({exists:sn.exists(),data:()=>sn.data(),metadata:sn.metadata}),err);unsubs.push(u);return u}}}});
-bLogin.onclick=async()=>{lmsg.textContent='Opening Google sign-in…';try{await signInWithPopup(auth,prov)}catch(e){if(e&&(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment'||e.code==='auth/popup-closed-by-user'&&false)){signInWithRedirect(auth,prov)}else{lmsg.textContent='Sign-in failed ['+(e&&e.code||'error')+']. Tap the button to try again.'}}};
+bLogin.onclick=async()=>{lmsg.textContent='Opening Google sign-in…';try{await signInWithPopup(auth,prov)}catch(e){const c=(e&&e.code)||'error',same=location.hostname===String(firebaseConfig.authDomain);
+if((c==='auth/popup-blocked'||c==='auth/operation-not-supported-in-this-environment')&&same){signInWithRedirect(auth,prov)}
+else if(c==='auth/popup-blocked'){lmsg.textContent='Pop-ups are blocked. In Settings > Safari, turn off "Block Pop-ups", then tap the button again.'}
+else{lmsg.textContent='Sign-in failed ['+c+']. Tap the button to try again.'}}};
 doSignOut=()=>signOut(auth);
 setTimeout(()=>{if(login.style.display!=='none')bLogin.hidden=false},3000);
 getRedirectResult(auth).catch(e=>{lmsg.textContent='Sign-in failed ['+(e&&e.code||'error')+']'});
