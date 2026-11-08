@@ -20,9 +20,9 @@ body{height:100%;margin:0;background:var(--bg,#F6F8FB);color:var(--tx,#2F3542);f
 button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 #app{height:100%;display:flex;flex-direction:column;max-width:1100px;margin:0 auto}
 #bar{flex:none;background:var(--bar);border-radius:0 0 22px 22px;padding:14px 20px;display:flex;flex-direction:column;gap:12px}
-.r1{display:flex;justify-content:space-between;align-items:center;min-height:44px}.r1>div:first-child{white-space:nowrap;min-width:0}
+.r1{display:flex;justify-content:space-between;align-items:center;min-height:44px}.r1>div:first-child{white-space:nowrap;min-width:0;flex:1;overflow:hidden}
 #mt{font-size:30px;font-weight:700}#yr{font-size:14px;color:var(--sub);margin-left:8px}
-.acts{display:flex;gap:2px;align-items:center}
+.acts{display:flex;gap:2px;align-items:center;flex:none}
 .ib{min-width:40px;height:40px;border:0;border-radius:12px;background:transparent;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500}
 .seg{display:flex;background:var(--sg);border-radius:12px;padding:3px}
 .seg button{flex:1;border:0;background:transparent;padding:10px 0;border-radius:10px;font-weight:500;font-size:13px;color:var(--sub)}
@@ -146,10 +146,13 @@ const fd=k=>{const d=parse(k);return MS[d.getMonth()]+' '+d.getDate()};
 const evt=e=>e.de&&e.de>e.d?(e.ad?fd(e.d)+' – '+fd(e.de):fd(e.d)+' '+e.s+' – '+fd(e.de)+' '+e.e):(e.ad?'No time':e.s+'–'+e.e);
 const sg=(e,k)=>e.t==='x'&&e.de&&e.de>e.d?[k===e.d?tm(e.s):0,k===e.de?tm(e.e):24]:[tm(e.s),tm(e.e)];
 const PER={1:['08:30','10:00'],2:['10:25','11:55'],3:['13:15','14:45'],4:['15:10','16:40'],5:['17:05','18:35']};
-const periodOpts=()=>'<option value="">Class period…</option>'+Object.keys(PER).map(n=>'<option value="'+n+'"'+(PER[n][0]===ed.s&&PER[n][1]===ed.e?' selected':'')+'>Period '+n+' · '+PER[n][0].replace(/^0/,'')+'–'+PER[n][1].replace(/^0/,'')+'</option>').join('');
+const periodOpts=()=>'<option value="">Period</option>'+Object.keys(PER).map(n=>'<option value="'+n+'"'+(PER[n][0]===ed.s&&PER[n][1]===ed.e?' selected':'')+'>P'+n+' · '+PER[n][0].replace(/^0/,'')+'–'+PER[n][1].replace(/^0/,'')+'</option>').join('');
 const SO=(x,y)=>(y.ad?1:0)-(x.ad?1:0)||(x.s<y.s?-1:1);
 const LS=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem('cal:'+k));localStorage.setItem('cal:'+k,JSON.stringify(v));return true}catch(e){return null}};
 const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],MS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],ML=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const APP_VER='2026-11-06a';
+const MSD=['Jan.','Feb.','Mar.','Apr.','May','Jun.','Jul.','Aug.','Sep.','Oct.','Nov.','Dec.'];
+const VER='1107-0820';
 const KS='bar bg tx sub ln a b m f1 f2 o v nm pt ft su sa cd sg'.split(' ');
 const LP=['#3B5BA5','#D9486B','#2E8B6A'],NP=['#9DB4F0','#F29BB3','#7FD1B0'];
 const TH=(n,c,v,pn)=>({n,c,css:Object.fromEntries(KS.map((k,i)=>[k,v[i]])),pn});
@@ -168,7 +171,7 @@ function save(k,v){v.u=Date.now();U[k]=v.u;const ok=LS(k,v);if(!ok&&!(db&&root))
 if(db&&root){P[k]=(P[k]||0)+1;q[k]=(q[k]||Promise.resolve()).then(()=>root.doc(k).set(v)).catch(e=>toast('Could not save to the cloud (saved on this device)'+(e&&e.code?' ['+e.code+']':''))).then(()=>{P[k]--})}}
 const RH=()=>parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rh'))||92;
 function applyTheme(n){if(!T[n])n='soft';S.th=n;const r=document.documentElement;for(const k in T[n].css)r.style.setProperty('--'+k,T[n].css[k]);r.style.colorScheme=n==='night'?'dark':'light';document.querySelectorAll('.dt').forEach((b,i)=>{const c=T[n].pn[i];b.style.background=c;b.style.boxShadow=i===ci?'0 0 0 2px var(--cd),0 0 0 4px '+c:'none'});drawAll()}
-function setTitle(d){$('#mt').textContent=ML[d.getMonth()];$('#yr').textContent=d.getFullYear()}
+function setTitle(d){$('#mt').textContent=MSD[d.getMonth()];$('#yr').textContent=d.getFullYear()}
 /* ---- month ---- */
 function buildMonth(){
 const mv=$('#mv'),st=mv.scrollTop,rh=RH(),now=new Date(),a=new Date(now.getFullYear(),now.getMonth()-1,1),z=new Date(now.getFullYear(),now.getMonth()+13,1);
@@ -236,16 +239,15 @@ $('#dp').innerHTML='<div class="dh"><b>'+DOW[d.getDay()]+', '+MS[d.getMonth()]+'
 function grab(){if(!$('#en'))return;ed.n=$('#en').value;ed.d=$('#ed').value||ed.d;if($('#ea'))ed.ad=$('#ea').checked;if($('#eu'))ed.ue=$('#eu').value;if($('#ex'))ed.de=$('#ex').value;if($('#es')){ed.s=$('#es').value||ed.s;ed.e=$('#ee').value||ed.e}ed.nt=$('#et').value}
 function drawEd(){const f=ed.t==='f';
 $('#sh').innerHTML='<div class="card"><input id="en" placeholder="Event name" value="'+esc(ed.n)+'"><div class="seg"><button data-ty="x" class="'+(f?'':'on')+'">One-off</button><button data-ty="f" class="'+(f?'on':'')+'">Weekly</button></div>'+
-'<div class="row"><span class="sb" style="flex:none;min-width:40px">Start</span><input id="ed" type="date" value="'+ed.d+'"></div>'+
-(f?'':'<div class="row"><span class="sb" style="flex:none;min-width:40px">End</span><input id="ex" type="date" value="'+(ed.de||'')+'"><button class="bt" data-cd style="flex:none;padding:10px 12px">Clear</button></div>')+
+'<div class="row"><input id="ed" type="date" value="'+ed.d+'" aria-label="Start date"><span style="flex:none">–</span><input id="ex" type="date" value="'+(ed.de||'')+'" aria-label="End date (optional)"><button class="bt" data-cd aria-label="Clear end date" style="flex:none;padding:10px 12px">✕</button></div>'+
 '<label class="row" style="justify-content:flex-start;gap:10px;font-size:14px"><input id="ea" type="checkbox"'+(ed.ad?' checked':'')+'><span style="flex:none">No specific time</span></label>'+
-(ed.ad?'':'<select id="ep">'+periodOpts()+'</select><div class="row"><input id="es" type="time" value="'+ed.s+'"><span style="flex:none">–</span><input id="ee" type="time" value="'+ed.e+'"></div>')+
+(ed.ad?'':'<div class="row"><input id="es" type="time" value="'+ed.s+'"><span style="flex:none">–</span><input id="ee" type="time" value="'+ed.e+'"><select id="ep" style="flex:1.4">'+periodOpts()+'</select></div>')+
 '<div class="row" style="justify-content:flex-start">'+['a','b','m','f1','f2'].map(c=>'<button class="cs '+c+(ed.c===c?' on':'')+'" data-col="'+c+'" aria-label="Color"></button>').join('')+'</div>'+
-(f?'<div class="row"><span class="sb" style="flex:none">Ends (optional)</span><input id="eu" type="date" value="'+(ed.ue||'')+'"><button class="bt" data-cu style="flex:none;padding:10px 12px">Clear</button></div><span class="sb">Repeats every week on this day. Leave the end date empty to repeat forever.</span>':'')+
+'<span class="sb">'+(f?'Repeats every week from the start date. Leave the end date empty to repeat forever.':'Leave the end date empty for a one-day event.')+'</span>'+
 '<textarea id="et" rows="3" placeholder="Notes (optional)">'+esc(ed.nt||'')+'</textarea>'+
 '<div class="row">'+(ed.isNew?'':'<button class="bt" data-del>Delete</button>')+'<button class="bt" data-x>Cancel</button><button class="bt pr" data-ok>Save</button></div></div>'}
-function editor(id,date,st,en){const o=S.ev.find(x=>x.id===id);ed=o?{...o}:{t:'x',n:'',d:date||(mode?key(add(ws,new Date().getDay())):sel),s:st||'09:00',e:en||'10:00',c:'a',nt:''};ed.isNew=!o;if(o&&o.t==='f'&&!o.cc)ed.c='f'+(o.f||1);ed.ct=!!o;drawEd();$('#sh').classList.add('on')}
-function themeSheet(){$('#sh').innerHTML='<div class="card"><b style="font-size:18px">Color theme</b><span class="sb">Pick one to match your mood</span>'+Object.keys(T).map(k=>{const t=T[k].css;return '<button class="tc" data-th="'+k+'" style="background:'+t.bg+';color:'+t.tx+';border:2px solid '+(S.th===k?t.tx:'rgba(120,120,140,.3)')+'"><span><b>'+T[k].n+'</b> <small style="color:'+t.sub+'">'+T[k].c+'</small></span><span class="sw">'+[t.bar,t.a,t.b,t.m,t.f1,t.f2].map(c=>'<i style="background:'+c+'"></i>').join('')+'</span></button>'}).join('')+'<button class="bt" data-out>Sign out</button><button class="bt" data-x>Close</button></div>';$('#sh').classList.add('on')}
+function editor(id,date,st,en){const o=S.ev.find(x=>x.id===id);ed=o?{...o}:{t:'x',n:'',d:date||(mode?key(add(ws,new Date().getDay())):sel),s:st||'09:00',e:en||'10:00',c:'a',nt:''};ed.isNew=!o;if(o&&o.t==='f')ed.de=o.ue||'';if(o&&o.t==='f'&&!o.cc)ed.c='f'+(o.f||1);ed.ct=!!o;drawEd();$('#sh').classList.add('on')}
+function themeSheet(){$('#sh').innerHTML='<div class="card"><b style="font-size:18px">Color theme</b><span class="sb">Pick one to match your mood · v'+VER+'</span>'+Object.keys(T).map(k=>{const t=T[k].css;return '<button class="tc" data-th="'+k+'" style="background:'+t.bg+';color:'+t.tx+';border:2px solid '+(S.th===k?t.tx:'rgba(120,120,140,.3)')+'"><span><b>'+T[k].n+'</b> <small style="color:'+t.sub+'">'+T[k].c+'</small></span><span class="sw">'+[t.bar,t.a,t.b,t.m,t.f1,t.f2].map(c=>'<i style="background:'+c+'"></i>').join('')+'</span></button>'}).join('')+'<button class="bt" data-out>Sign out</button><button class="bt" data-x>Close</button><span class="sb" style="text-align:center">Version '+APP_VER+'</span></div>';$('#sh').classList.add('on')}
 $('#sh').addEventListener('click',e=>{const t=e.target,sh=$('#sh');
 if(t===sh||t.closest('[data-x]'))return sh.classList.remove('on');
 if(t.closest('[data-out]')){sh.classList.remove('on');return doSignOut()}
@@ -258,7 +260,7 @@ const co=t.closest('[data-col]');if(co){grab();ed.c=co.dataset.col;ed.ct=1;retur
 if(t.closest('[data-del]')){S.ev=S.ev.filter(x=>x.id!==ed.id)}
 else if(t.closest('[data-ok]')){grab();const o={id:ed.id||Date.now().toString(36)+Math.random().toString(36).slice(2,5),t:ed.t,n:ed.n.trim()||'Event',d:ed.d,s:ed.s,e:ed.e,c:ed.c,nt:(ed.nt||'').trim(),ad:!!ed.ad,cc:1};
 const md=o.t==='x'&&ed.de&&ed.de>o.d;if(o.ad){o.s='00:00';o.e='00:00'}else if(!md){if(tm(o.e)<=tm(o.s))o.e=pad(Math.min(23,Math.floor(tm(o.s))+1))+':'+o.s.slice(3);if(tm(o.e)<=tm(o.s))o.e='23:59'}
-o.de=md?ed.de:'';if(o.t==='f'){o.ue=ed.ue||'';if(o.ue&&o.ue<o.d)o.ue=o.d}
+o.de=md?ed.de:'';if(o.t==='f'){o.ue=ed.de||'';if(o.ue&&o.ue<o.d)o.ue=o.d}
 const i=S.ev.findIndex(x=>x.id===o.id);i<0?S.ev.push(o):S.ev[i]=o;if(o.t==='x')sel=o.d}
 else return;
 save('events',{list:S.ev});sh.classList.remove('on');renderAll()});
@@ -279,7 +281,7 @@ applyTheme(LS('prefs')?.th||(matchMedia('(prefers-color-scheme: dark)').matches?
 buildMonth();{const t=new Date();toRow(t,rowOf(new Date(t.getFullYear(),t.getMonth(),1)))}
 setMode(LS('mode')===1?1:0);
 /* ---- Google sign-in + Firestore (per-user private data) ---- */
-if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+if('serviceWorker' in navigator){const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had&&!window.__rl){window.__rl=1;location.reload()}})}
 const login=$('#login'),bLogin=$('#bLogin'),lmsg=$('#lmsg');
 if(!firebaseConfig||!firebaseConfig.apiKey||String(firebaseConfig.apiKey).startsWith('PASTE')){lmsg.textContent='Firebase is not set up yet. Open public/firebase-config.json and paste your settings.'}
 else{
